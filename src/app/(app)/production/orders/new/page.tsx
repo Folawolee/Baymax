@@ -13,13 +13,13 @@ export default function NewProductionOrderPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const utils = trpc.useUtils();
-  const { data: sites } = trpc.site.list.useQuery({ activeOnly: true });
+  const { data: sites } = trpc.productionFacility.list.useQuery({ activeOnly: true });
   const { data: customers } = trpc.customer.list.useQuery();
   const create = trpc.productionOrder.create.useMutation();
 
-  const batchSites = (sites ?? []).filter((s) => s.productionMode === "BATCH_WEIGHBRIDGE");
+  const batchFacilities = (sites ?? []).filter((s) => s.productionMode === "BATCH_WEIGHBRIDGE");
 
-  const [siteId, setSiteId] = useState("");
+  const [facilityId, setFacilityId] = useState("");
   const [customerId, setCustomerId] = useState("");
   const [productLabel, setProductLabel] = useState("");
   const [targetTons, setTargetTons] = useState("");
@@ -27,25 +27,25 @@ export default function NewProductionOrderPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (siteId || batchSites.length === 0) return;
-    const preselect = searchParams.get("siteId");
+    if (facilityId || batchFacilities.length === 0) return;
+    const preselect = searchParams.get("facilityId");
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSiteId(preselect && batchSites.some((s) => s.id === preselect) ? preselect : batchSites[0].id);
-  }, [batchSites, siteId, searchParams]);
+    setFacilityId(preselect && batchFacilities.some((s) => s.id === preselect) ? preselect : batchFacilities[0].id);
+  }, [batchFacilities, facilityId, searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!siteId || !productLabel || !targetTons) return;
+    if (!facilityId || !productLabel || !targetTons) return;
     try {
       const order = await create.mutateAsync({
-        siteId,
+        facilityId,
         customerId: customerId || undefined,
         productLabel,
         targetQuantityKg: Number(targetTons) * 1000,
         notes: notes || undefined,
       });
-      await utils.productionOrder.listBySite.invalidate({ siteId });
+      await utils.productionOrder.listByFacility.invalidate({ facilityId });
       await utils.productionOrder.listByCompany.invalidate();
       router.push(`/production/orders/${order.id}`);
     } catch (err) {
@@ -64,11 +64,11 @@ export default function NewProductionOrderPage() {
         <Label htmlFor="site">Line</Label>
         <select
           id="site"
-          value={siteId}
-          onChange={(e) => setSiteId(e.target.value)}
+          value={facilityId}
+          onChange={(e) => setFacilityId(e.target.value)}
           className="h-11 w-full rounded-md border border-input bg-background px-3 text-base"
         >
-          {batchSites.map((s) => (
+          {batchFacilities.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
             </option>
@@ -115,7 +115,7 @@ export default function NewProductionOrderPage() {
 
       {error && <p className="text-sm text-status-bad">{error}</p>}
 
-      <Button type="submit" size="lg" disabled={!siteId || !productLabel || !targetTons || create.isPending}>
+      <Button type="submit" size="lg" disabled={!facilityId || !productLabel || !targetTons || create.isPending}>
         {create.isPending ? "Saving…" : "Log order"}
       </Button>
     </form>

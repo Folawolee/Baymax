@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
+import { scopeLabel } from "@/lib/scopes";
 import { DataTable, type DataTableColumn } from "@/components/data/DataTable";
 import { StatusBadge, statusCellClass, type Status } from "@/components/data/StatusBadge";
 import { buttonVariants } from "@/components/ui/button";
@@ -51,7 +52,7 @@ export default function ProcurementPage() {
 
   const columns: DataTableColumn<NonNullable<typeof orders>[number]>[] = [
     { key: "vendor", header: "Vendor", cell: (po) => po.vendor.name },
-    { key: "site", header: "Site", cell: (po) => po.site.name },
+    { key: "site", header: "Site", cell: (po) => scopeLabel(po) },
     {
       key: "total",
       header: "Total",
@@ -78,7 +79,6 @@ export default function ProcurementPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-heading text-lg font-semibold">Procurement</h1>
-          <p className="text-sm text-muted-foreground">Approvals without the inbox archaeology.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/procurement/vendors" className={buttonVariants({ variant: "outline" })}>

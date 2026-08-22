@@ -8,53 +8,46 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ProductionModePicker, type ProductionMode } from "@/components/production/ProductionModePicker";
-import { useCompanyConfig } from "@/lib/companyConfig";
 import { useAuth } from "@/lib/auth";
 
-interface SiteRow {
+interface FacilityRow {
   id: string;
   name: string;
-  typeLabel: string;
+  facilityType: string;
   productionMode: string;
-  projectName: string | null;
   status: string;
 }
 
-export default function ManageSitesPage() {
+export default function ManageFacilitiesPage() {
   const { user } = useAuth();
-  const { siteTermLabel } = useCompanyConfig();
   const utils = trpc.useUtils();
-  const { data: sites, isLoading } = trpc.site.list.useQuery();
-  const { data: projects } = trpc.project.list.useQuery();
-  const create = trpc.site.create.useMutation({
+  const { data: facilities, isLoading } = trpc.productionFacility.list.useQuery();
+  const create = trpc.productionFacility.create.useMutation({
     onSuccess: async () => {
-      await utils.site.list.invalidate();
+      await utils.productionFacility.list.invalidate();
       setName("");
-      setTypeLabel("");
+      setFacilityType("");
       setProductionMode("SIMPLE");
-      setProjectId("");
     },
   });
-  const complete = trpc.site.complete.useMutation({ onSuccess: () => utils.site.list.invalidate() });
-  const reopen = trpc.site.reopen.useMutation({ onSuccess: () => utils.site.list.invalidate() });
+  const complete = trpc.productionFacility.complete.useMutation({ onSuccess: () => utils.productionFacility.list.invalidate() });
+  const reopen = trpc.productionFacility.reopen.useMutation({ onSuccess: () => utils.productionFacility.list.invalidate() });
 
   const [name, setName] = useState("");
-  const [typeLabel, setTypeLabel] = useState("");
+  const [facilityType, setFacilityType] = useState("");
   const [productionMode, setProductionMode] = useState<ProductionMode>("SIMPLE");
-  const [projectId, setProjectId] = useState("");
 
-  const rows: SiteRow[] = (sites ?? []).map((s) => ({
-    id: s.id,
-    name: s.name,
-    typeLabel: s.typeLabel,
-    productionMode: s.productionMode,
-    projectName: s.project?.name ?? null,
-    status: s.status,
+  const rows: FacilityRow[] = (facilities ?? []).map((f) => ({
+    id: f.id,
+    name: f.name,
+    facilityType: f.facilityType,
+    productionMode: f.productionMode,
+    status: f.status,
   }));
 
-  const columns: DataTableColumn<SiteRow>[] = [
-    { key: "name", header: siteTermLabel, cell: (r) => r.name },
-    { key: "type", header: "Type", cell: (r) => r.typeLabel },
+  const columns: DataTableColumn<FacilityRow>[] = [
+    { key: "name", header: "Facility", cell: (r) => r.name },
+    { key: "type", header: "Type", cell: (r) => r.facilityType },
     {
       key: "mode",
       header: "Production tracking",
@@ -65,7 +58,6 @@ export default function ManageSitesPage() {
         />
       ),
     },
-    { key: "project", header: "Project", cell: (r) => r.projectName ?? "—" },
     {
       key: "status",
       header: "Status",
@@ -78,7 +70,7 @@ export default function ManageSitesPage() {
           {
             key: "actions",
             header: "",
-            cell: (r: SiteRow) => (
+            cell: (r: FacilityRow) => (
               <Button
                 variant="outline"
                 size="sm"
@@ -88,7 +80,7 @@ export default function ManageSitesPage() {
                 {r.status === "COMPLETED" ? "Reopen" : "Mark complete"}
               </Button>
             ),
-          } satisfies DataTableColumn<SiteRow>,
+          } satisfies DataTableColumn<FacilityRow>,
         ]
       : []),
   ];
@@ -96,9 +88,9 @@ export default function ManageSitesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="font-heading text-lg font-semibold">Manage {siteTermLabel.toLowerCase()}s</h1>
+        <h1 className="font-heading text-lg font-semibold">Manage production facilities</h1>
         <p className="text-sm text-muted-foreground">
-          Add a new {siteTermLabel.toLowerCase()} and choose how its production gets tracked.
+          Plants and production lines, and how each one&apos;s output gets tracked. Roads are managed within their project.
         </p>
       </div>
 
@@ -106,59 +98,38 @@ export default function ManageSitesPage() {
         className="flex flex-col gap-3 rounded-md border p-4 sm:max-w-sm"
         onSubmit={(e) => {
           e.preventDefault();
-          if (name.trim() && typeLabel.trim()) {
-            create.mutate({
-              name: name.trim(),
-              typeLabel: typeLabel.trim(),
-              productionMode,
-              projectId: projectId || undefined,
-            });
+          if (name.trim() && facilityType.trim()) {
+            create.mutate({ name: name.trim(), facilityType: facilityType.trim(), productionMode });
           }
         }}
       >
-        <p className="text-sm font-medium">Add a {siteTermLabel.toLowerCase()}</p>
+        <p className="text-sm font-medium">Add a facility</p>
         <div className="space-y-1.5">
-          <Label htmlFor="siteName">Name</Label>
-          <Input id="siteName" value={name} onChange={(e) => setName(e.target.value)} placeholder={`e.g. ${siteTermLabel} 7`} />
+          <Label htmlFor="facilityName">Name</Label>
+          <Input id="facilityName" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Asphalt Plant" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="siteType">Type</Label>
+          <Label htmlFor="facilityType">Type</Label>
           <Input
-            id="siteType"
-            value={typeLabel}
-            onChange={(e) => setTypeLabel(e.target.value)}
-            placeholder="e.g. construction_site, production_line, warehouse"
+            id="facilityType"
+            value={facilityType}
+            onChange={(e) => setFacilityType(e.target.value)}
+            placeholder="e.g. asphalt_plant, batching_plant, production_line"
           />
         </div>
         <div className="space-y-1.5">
           <Label>Production tracking</Label>
           <ProductionModePicker value={productionMode} onChange={setProductionMode} />
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="siteProject">Project (optional)</Label>
-          <select
-            id="siteProject"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-          >
-            <option value="">Ungrouped</option>
-            {(projects ?? []).map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <Button type="submit" disabled={!name.trim() || !typeLabel.trim() || create.isPending}>
-          {create.isPending ? "Adding…" : `Add ${siteTermLabel.toLowerCase()}`}
+        <Button type="submit" disabled={!name.trim() || !facilityType.trim() || create.isPending}>
+          {create.isPending ? "Adding…" : "Add facility"}
         </Button>
       </form>
 
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : (
-        <DataTable columns={columns} rows={rows} rowKey={(r) => r.id} emptyTitle={`No ${siteTermLabel.toLowerCase()}s yet`} />
+        <DataTable columns={columns} rows={rows} rowKey={(r) => r.id} emptyTitle="No production facilities yet" />
       )}
     </div>
   );

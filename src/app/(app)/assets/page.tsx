@@ -58,7 +58,7 @@ export default function AssetsPage() {
       id: a.id,
       name: a.name,
       category: a.category,
-      siteName: a.site?.name ?? "Company-wide",
+      siteName: a.road?.name ?? a.facility?.name ?? "Company-wide",
       status: meta.status,
       statusLabel: meta.label,
     };

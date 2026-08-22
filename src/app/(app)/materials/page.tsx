@@ -78,7 +78,6 @@ export default function MaterialsPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="font-heading text-lg font-semibold">Materials</h1>
-        <p className="text-sm text-muted-foreground">Know it&rsquo;s there before you need it.</p>
       </div>
 
       <MaterialsSubNav />
@@ -110,7 +109,6 @@ export default function MaterialsPage() {
           Add material
         </Button>
       </form>
-      <p className="text-xs text-muted-foreground">Reorder point — restock this material once quantity falls below this number.</p>
 
       {summary && (
         <div className="rounded-md border bg-muted/30 p-4">

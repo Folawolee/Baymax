@@ -2,15 +2,202 @@
 
 import { Fragment, useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useScopeOptions, scopeArgs } from "@/lib/scopes";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EmptyState } from "@/components/data/EmptyState";
+import { StatusBadge } from "@/components/data/StatusBadge";
 import { ROLE_LABELS, type Role } from "@/lib/types";
 
 type ConfigurableRole = Exclude<Role, "OWNER_ADMIN">;
-const CONFIGURABLE_ROLES: ConfigurableRole[] = ["SITE_LEAD", "PROCUREMENT_OFFICER", "WAREHOUSE_KEEPER", "VIEWER"];
+const CONFIGURABLE_ROLES: ConfigurableRole[] = ["SITE_LEAD", "PROCUREMENT_OFFICER", "WAREHOUSE_KEEPER", "FINANCE", "VIEWER"];
+const ASSIGNABLE_ROLES: Role[] = [
+  "OWNER_ADMIN",
+  "SITE_LEAD",
+  "PROCUREMENT_OFFICER",
+  "WAREHOUSE_KEEPER",
+  "FINANCE",
+  "VIEWER",
+];
+
+function TeamManagement() {
+  const utils = trpc.useUtils();
+  const { data: users, isLoading } = trpc.user.list.useQuery();
+  const scopes = useScopeOptions();
+
+  const updateRole = trpc.user.updateRole.useMutation({
+    onSuccess: () => utils.user.list.invalidate(),
+  });
+  const setActive = trpc.user.setActive.useMutation({
+    onSuccess: () => utils.user.list.invalidate(),
+  });
+  const createUser = trpc.user.create.useMutation();
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<Role>("SITE_LEAD");
+  const [scopeKey, setScopeKey] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleInvite(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!name || !email || !password) return;
+    try {
+      await createUser.mutateAsync({ name, email, role, ...scopeArgs(scopeKey), password });
+      await utils.user.list.invalidate();
+      setName("");
+      setEmail("");
+      setPassword("");
+      setScopeKey("");
+      setRole("SITE_LEAD");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create user");
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4 rounded-md border p-4">
+      <div>
+        <p className="text-sm font-medium">Team</p>
+        <p className="text-sm text-muted-foreground">Manage who has access, their role and which site they&rsquo;re assigned to.</p>
+      </div>
+
+      {isLoading || !users ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-140 border-collapse text-sm">
+            <thead>
+              <tr className="border-b">
+                <th className="py-2 pr-2 text-left font-medium">Name</th>
+                <th className="px-2 py-2 text-left font-medium">Email</th>
+                <th className="px-2 py-2 text-left font-medium">Role</th>
+                <th className="px-2 py-2 text-left font-medium">Site</th>
+                <th className="px-2 py-2 text-left font-medium">Status</th>
+                <th className="px-2 py-2 text-left font-medium"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.id} className="border-b last:border-0">
+                  <td className="py-2 pr-2">{u.name}</td>
+                  <td className="px-2 py-2 text-muted-foreground">{u.email}</td>
+                  <td className="px-2 py-2">
+                    <select
+                      value={u.role}
+                      disabled={updateRole.isPending}
+                      onChange={(e) =>
+                        updateRole.mutate({ userId: u.id, role: e.target.value as Role, roadId: u.roadId ?? undefined, facilityId: u.facilityId ?? undefined })
+                      }
+                      className="h-8 rounded-md border border-input bg-background px-1 text-xs"
+                    >
+                      {ASSIGNABLE_ROLES.map((r) => (
+                        <option key={r} value={r}>
+                          {ROLE_LABELS[r]}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-2 py-2">
+                    <select
+                      value={u.roadId ? `road:${u.roadId}` : u.facilityId ? `facility:${u.facilityId}` : ""}
+                      disabled={updateRole.isPending}
+                      onChange={(e) =>
+                        updateRole.mutate({ userId: u.id, role: u.role as Role, ...scopeArgs(e.target.value) })
+                      }
+                      className="h-8 rounded-md border border-input bg-background px-1 text-xs"
+                    >
+                      <option value="">— none —</option>
+                      {scopes.map((s) => (
+                        <option key={s.key} value={s.key}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-2 py-2">
+                    <StatusBadge status={u.active ? "good" : "neutral"} label={u.active ? "Active" : "Deactivated"} />
+                  </td>
+                  <td className="px-2 py-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={setActive.isPending}
+                      onClick={() => setActive.mutate({ userId: u.id, active: !u.active })}
+                    >
+                      {u.active ? "Deactivate" : "Reactivate"}
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <form onSubmit={handleInvite} className="flex flex-col gap-3 border-t pt-4">
+        <p className="text-sm font-medium">Invite user</p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="newName">Name</Label>
+            <Input id="newName" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="newEmail">Email</Label>
+            <Input id="newEmail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="newRole">Role</Label>
+            <select
+              id="newRole"
+              value={role}
+              onChange={(e) => setRole(e.target.value as Role)}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              {ASSIGNABLE_ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {ROLE_LABELS[r]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="newSite">Site</Label>
+            <select
+              id="newSite"
+              value={scopeKey}
+              onChange={(e) => setScopeKey(e.target.value)}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="">— none —</option>
+              {scopes.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="newPassword">Password</Label>
+            <Input id="newPassword" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </div>
+        </div>
+
+        {error && <p className="text-sm text-status-bad">{error}</p>}
+
+        <div>
+          <Button type="submit" disabled={!name || !email || !password || createUser.isPending}>
+            {createUser.isPending ? "Creating…" : "Invite user"}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
 
 function RolePermissionsMatrix() {
   const utils = trpc.useUtils();
@@ -72,9 +259,7 @@ function RolePermissionsMatrix() {
                           type="checkbox"
                           checked={data.matrix[key][role]}
                           disabled={setPermission.isPending}
-                          onChange={(e) =>
-                            setPermission.mutate({ key, role, allowed: e.target.checked })
-                          }
+                          onChange={(e) => setPermission.mutate({ key, role, allowed: e.target.checked })}
                         />
                       </td>
                     ))}
@@ -213,29 +398,31 @@ export default function SettingsPage() {
         {config.siteOperationsEnabled ? (
           <>
             <p className="text-sm text-muted-foreground">
-              Site operations is on — the Site Operations module is visible in the nav for logging usage, daily notes,
+              Project operations is on — the Project Operations module is visible in the nav for logging usage, daily notes,
               expenses and imprest.
             </p>
             <div>
               <Button variant="outline" size="sm" onClick={() => toggleSiteOperations(false)} disabled={updateConfig.isPending}>
-                Turn off site operations
+                Turn off project operations
               </Button>
             </div>
           </>
         ) : (
           <>
             <p className="text-sm text-muted-foreground">
-              Site operations is off — the Site Operations module is hidden. Turn it on if you have separate field/site
+              Project operations is off — the Project Operations module is hidden. Turn it on if you have separate field/site
               work to track (not needed for a pure production operation).
             </p>
             <div>
               <Button size="sm" onClick={() => toggleSiteOperations(true)} disabled={updateConfig.isPending}>
-                Turn on site operations
+                Turn on project operations
               </Button>
             </div>
           </>
         )}
       </div>
+
+      <TeamManagement />
 
       <RolePermissionsMatrix />
     </div>

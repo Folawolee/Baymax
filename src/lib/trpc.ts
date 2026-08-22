@@ -1,4 +1,5 @@
 import { createTRPCReact } from "@trpc/react-query";
+import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
 // Type-only import — erased at compile time, so there's no runtime coupling
@@ -7,6 +8,10 @@ import superjson from "superjson";
 import type { AppRouter } from "../../../src/server/trpc/routers/_app";
 
 export const trpc = createTRPCReact<AppRouter>();
+
+/** Server-derived shapes, so pages never restate a type the router already defines. */
+export type RouterOutputs = inferRouterOutputs<AppRouter>;
+export type RouterInputs = inferRouterInputs<AppRouter>;
 
 export function getApiUrl(): string {
   return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";

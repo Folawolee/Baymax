@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { trpc } from "@/lib/trpc";
+import { scopeLabel } from "@/lib/scopes";
 import { RecordDetailLayout } from "@/components/data/RecordDetailLayout";
 import { EmptyState } from "@/components/data/EmptyState";
 import { StatusBadge, type Status } from "@/components/data/StatusBadge";
@@ -102,7 +103,7 @@ export default function AssetDetailPage() {
   return (
     <RecordDetailLayout
       title={asset.name}
-      subtitle={`${asset.category}${asset.site ? ` — ${asset.site.name}` : ""}`}
+      subtitle={`${asset.category}${asset.road || asset.facility ? ` — ${scopeLabel(asset)}` : ""}`}
       badge={<StatusBadge status={meta.status} label={meta.label} />}
       actions={
         <div className="flex gap-2">

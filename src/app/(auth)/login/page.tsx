@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { BaymaxMark } from "@/components/layout/BaymaxMark";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -34,8 +35,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
         <div>
-          <h1 className="font-heading text-xl font-semibold">Baymax</h1>
-          <p className="text-sm text-muted-foreground">One dashboard, updated as the work happens.</p>
+          <div className="flex items-center gap-2"><BaymaxMark /><h1 className="font-heading text-xl font-semibold">Baymax</h1></div>
+          <p className="text-sm text-muted-foreground">AI guidance for physical operations.</p>
         </div>
 
         <div className="space-y-1.5">
@@ -62,7 +63,7 @@ export default function LoginPage() {
         <p className="text-center text-sm text-muted-foreground">
           New company?{" "}
           <Link href="/register" className="font-medium text-foreground underline underline-offset-2">
-            Set up Pinta
+            Set up Baymax
           </Link>
         </p>
       </form>

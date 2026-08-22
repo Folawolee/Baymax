@@ -2,21 +2,13 @@
 
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
+import { entryScope } from "@/lib/scopes";
 import { StatTile, StatRow } from "@/components/charts/StatTile";
 import { BarChart } from "@/components/charts/BarChart";
 import { NetFlowChart } from "@/components/charts/NetFlowChart";
 import { buttonVariants } from "@/components/ui/button";
 import { formatCompactCurrency, formatCurrency } from "@/lib/format";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  FUEL: "Fuel",
-  LABOR: "Labor",
-  MATERIALS: "Materials",
-  EQUIPMENT: "Equipment",
-  TRANSPORT: "Transport",
-  UTILITIES: "Utilities",
-  MISCELLANEOUS: "Miscellaneous",
-};
+import { CATEGORY_LABELS } from "@/lib/expenseCategories";
 
 export default function FinancialOverviewPage() {
   const { data: receivables, isLoading: loadingReceivables } = trpc.invoice.receivablesSummary.useQuery();
@@ -41,11 +33,20 @@ export default function FinancialOverviewPage() {
           <p className="text-sm text-muted-foreground">Budgets, receivables, profitability and cash flow.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link href="/financial/dashboard" className={buttonVariants({ variant: "outline" })}>
+            Dashboard
+          </Link>
+          <Link href="/financial/daily-report" className={buttonVariants({ variant: "outline" })}>
+            Daily Report
+          </Link>
           <Link href="/financial/customers" className={buttonVariants({ variant: "outline" })}>
             Customers
           </Link>
           <Link href="/financial/budgets" className={buttonVariants({ variant: "outline" })}>
             Budgets
+          </Link>
+          <Link href="/financial/fund-requests" className={buttonVariants({ variant: "outline" })}>
+            Fund Requests
           </Link>
           <Link href="/financial/invoices" className={buttonVariants()}>
             Invoices
@@ -84,8 +85,8 @@ export default function FinancialOverviewPage() {
               <p className="mb-3 text-xs font-medium text-muted-foreground">Revenue vs. cost by site</p>
               <BarChart
                 items={profitability.map((p) => ({
-                  id: p.site.id,
-                  label: p.site.name,
+                  id: entryScope(p).id,
+                  label: entryScope(p).name,
                   value: p.revenue,
                   reference: p.cost,
                   status: p.margin >= 0 ? "good" : "bad",

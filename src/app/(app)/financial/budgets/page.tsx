@@ -8,11 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/format";
 import { useCompanyConfig } from "@/lib/companyConfig";
+import { useScopeOptions, scopeArgs, entryScope } from "@/lib/scopes";
 
 export default function BudgetsPage() {
   const { siteTermLabel } = useCompanyConfig();
   const utils = trpc.useUtils();
-  const { data: sites } = trpc.site.list.useQuery();
+  const scopes = useScopeOptions();
   const { data: costToComplete, isLoading } = trpc.budget.listCostToCompleteForAllSites.useQuery();
   const setBudget = trpc.budget.set.useMutation({
     onSuccess: async () => {
@@ -21,14 +22,14 @@ export default function BudgetsPage() {
     },
   });
 
-  const [siteId, setSiteId] = useState("");
+  const [scopeKey, setScopeKey] = useState("");
   const [amount, setAmount] = useState("");
 
   const chartItems = (costToComplete ?? [])
     .filter((c) => c.costToComplete.budgetAmount !== null)
     .map((c) => ({
-      id: c.site.id,
-      label: c.site.name,
+      id: entryScope(c).id,
+      label: entryScope(c).name,
       value: c.costToComplete.committedSpend,
       reference: c.costToComplete.budgetAmount ?? undefined,
       status: (c.costToComplete.remaining ?? 0) < 0 ? ("bad" as const) : ("good" as const),
@@ -45,22 +46,22 @@ export default function BudgetsPage() {
         className="flex flex-wrap items-end gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          if (siteId && amount) setBudget.mutate({ siteId, amount: Number(amount) });
+          if (scopeKey && amount) setBudget.mutate({ ...scopeArgs(scopeKey), amount: Number(amount) });
         }}
       >
         <div className="space-y-1.5">
           <Label htmlFor="site">{siteTermLabel}</Label>
           <select
             id="site"
-            value={siteId}
-            onChange={(e) => setSiteId(e.target.value)}
+            value={scopeKey}
+            onChange={(e) => setScopeKey(e.target.value)}
             className="h-8 w-48 rounded-lg border border-input bg-background px-2.5 text-sm"
           >
             <option value="" disabled>
               Select a {siteTermLabel.toLowerCase()}
             </option>
-            {(sites ?? []).map((s) => (
-              <option key={s.id} value={s.id}>
+            {scopes.map((s) => (
+              <option key={s.key} value={s.key}>
                 {s.name}
               </option>
             ))}
@@ -70,7 +71,7 @@ export default function BudgetsPage() {
           <Label htmlFor="amount">Budget amount</Label>
           <Input id="amount" type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-40" />
         </div>
-        <Button type="submit" disabled={!siteId || !amount || setBudget.isPending}>
+        <Button type="submit" disabled={!scopeKey || !amount || setBudget.isPending}>
           Set budget
         </Button>
       </form>
@@ -90,8 +91,8 @@ export default function BudgetsPage() {
         <div className="border-b px-3 py-2 text-xs font-medium text-muted-foreground">All {siteTermLabel.toLowerCase()}s</div>
         <ul className="divide-y">
           {(costToComplete ?? []).map((c) => (
-            <li key={c.site.id} className="flex items-center justify-between px-3 py-2 text-sm">
-              <span>{c.site.name}</span>
+            <li key={entryScope(c).key} className="flex items-center justify-between px-3 py-2 text-sm">
+              <span>{entryScope(c).name}</span>
               <span className="tabular-nums text-muted-foreground">
                 {formatCurrency(c.costToComplete.committedSpend)}
                 {c.costToComplete.budgetAmount !== null && ` / ${formatCurrency(c.costToComplete.budgetAmount)}`}

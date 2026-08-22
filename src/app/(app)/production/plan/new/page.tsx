@@ -17,13 +17,13 @@ export default function NewProductionPlanPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const utils = trpc.useUtils();
-  const { siteTermLabel, productionUnitLabel } = useCompanyConfig();
-  const { data: sites } = trpc.site.list.useQuery({ activeOnly: true });
+  const { productionUnitLabel } = useCompanyConfig();
+  const { data: sites } = trpc.productionFacility.list.useQuery({ activeOnly: true });
   const createPlan = trpc.production.createPlan.useMutation();
 
   const simpleSites = (sites ?? []).filter((s) => s.productionMode === "SIMPLE");
 
-  const [siteId, setSiteId] = useState("");
+  const [facilityId, setFacilityId] = useState("");
   const [targetOutput, setTargetOutput] = useState("");
   const [startDate, setStartDate] = useState(todayIso());
   const [endDate, setEndDate] = useState("");
@@ -31,27 +31,27 @@ export default function NewProductionPlanPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (siteId || simpleSites.length === 0) return;
-    const preselect = searchParams.get("siteId");
+    if (facilityId || simpleSites.length === 0) return;
+    const preselect = searchParams.get("facilityId");
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSiteId(preselect && simpleSites.some((s) => s.id === preselect) ? preselect : simpleSites[0].id);
-  }, [simpleSites, siteId, searchParams]);
+    setFacilityId(preselect && simpleSites.some((s) => s.id === preselect) ? preselect : simpleSites[0].id);
+  }, [simpleSites, facilityId, searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!siteId || !targetOutput || !endDate) return;
+    if (!facilityId || !targetOutput || !endDate) return;
     try {
       await createPlan.mutateAsync({
-        siteId,
+        facilityId,
         targetOutput: Number(targetOutput),
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         milestoneNote: milestoneNote || undefined,
       });
-      await utils.production.planVsActual.invalidate({ siteId });
-      await utils.production.statusForAllSites.invalidate();
-      router.push(`/production/${siteId}`);
+      await utils.production.planVsActual.invalidate({ facilityId });
+      await utils.production.statusForAllFacilities.invalidate();
+      router.push(`/production/${facilityId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create plan");
     }
@@ -61,15 +61,15 @@ export default function NewProductionPlanPage() {
     <form onSubmit={handleSubmit} className="mx-auto flex max-w-sm flex-col gap-5">
       <div>
         <h1 className="font-heading text-lg font-semibold">Set a production target</h1>
-        <p className="text-sm text-muted-foreground">How much {productionUnitLabel} a {siteTermLabel.toLowerCase()} should produce over a date range.</p>
+        <p className="text-sm text-muted-foreground">How much {productionUnitLabel} a facility should produce over a date range.</p>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="site">{siteTermLabel}</Label>
+        <Label htmlFor="site">Facility</Label>
         <select
           id="site"
-          value={siteId}
-          onChange={(e) => setSiteId(e.target.value)}
+          value={facilityId}
+          onChange={(e) => setFacilityId(e.target.value)}
           className="h-11 w-full rounded-md border border-input bg-background px-3 text-base"
         >
           {simpleSites.map((s) => (
@@ -115,7 +115,7 @@ export default function NewProductionPlanPage() {
 
       {error && <p className="text-sm text-status-bad">{error}</p>}
 
-      <Button type="submit" size="lg" disabled={!siteId || !targetOutput || !endDate || createPlan.isPending}>
+      <Button type="submit" size="lg" disabled={!facilityId || !targetOutput || !endDate || createPlan.isPending}>
         {createPlan.isPending ? "Saving…" : "Set target"}
       </Button>
     </form>

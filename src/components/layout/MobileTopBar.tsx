@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { useBimpePanel } from "@/lib/bimpePanelState";
 import { useCompanyConfig } from "@/lib/companyConfig";
 import { ROLE_LABELS } from "@/lib/types";
-import { getVisibleModules, findActiveModule } from "@/lib/navModules";
+import { getVisibleModules, getSecondaryModules, findActiveModule } from "@/lib/navModules";
 import { initials } from "@/lib/initials";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -43,14 +43,14 @@ export function MobileTopBar() {
           <Menu className="size-4.5" />
         </button>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold leading-tight">{activeModule?.label ?? (companyName || "Pinta")}</p>
+          <p className="truncate text-sm font-semibold leading-tight">{activeModule?.label ?? (companyName || "BAYMAX")}</p>
         </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
         <button
           onClick={toggleBimpe}
-          aria-label="Open Bimpe"
+          aria-label="Open Baymax AI"
           className="flex size-9 items-center justify-center rounded-md border bg-muted/50 text-foreground transition-colors active:bg-accent"
         >
           <Sparkles className="size-4.5" />
@@ -85,11 +85,32 @@ export function MobileTopBar() {
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
         <SheetContent side="left" className="w-72 p-0">
           <SheetHeader className="border-b">
-            <SheetTitle>{companyName || "Pinta"}</SheetTitle>
+            <SheetTitle>{companyName || "BAYMAX"}</SheetTitle>
           </SheetHeader>
           <nav className="flex flex-col gap-1 p-3">
             {modules.map((mod) => {
               const active = mod.exact ? pathname === mod.href : pathname?.startsWith(mod.href);
+              return (
+                <Link
+                  key={mod.href}
+                  href={mod.href}
+                  onClick={() => setMenuOpen(false)}
+                  className={cn(
+                    "flex items-center gap-2.5 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                    active ? "bg-muted text-foreground" : "text-muted-foreground active:bg-accent",
+                  )}
+                >
+                  <mod.icon className="size-4.5" />
+                  {mod.label}
+                </Link>
+              );
+            })}
+
+            <p className="mt-3 border-t px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              More
+            </p>
+            {getSecondaryModules().map((mod) => {
+              const active = pathname?.startsWith(mod.href);
               return (
                 <Link
                   key={mod.href}

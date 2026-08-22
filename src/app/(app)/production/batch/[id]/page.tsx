@@ -43,10 +43,10 @@ export default function BatchDetailPage() {
   async function invalidateAll() {
     await utils.productionBatch.getById.invalidate({ id });
     if (batch) {
-      await utils.productionBatch.listBySite.invalidate({ siteId: batch.siteId });
-      await utils.productionBatch.siteSummary.invalidate({ siteId: batch.siteId });
+      await utils.productionBatch.listByFacility.invalidate({ facilityId: batch.facilityId });
+      await utils.productionBatch.facilitySummary.invalidate({ facilityId: batch.facilityId });
     }
-    await utils.productionBatch.summaryForAllSites.invalidate();
+    await utils.productionBatch.summaryForAllFacilities.invalidate();
   }
 
   async function handleWeighOut(e: React.FormEvent) {

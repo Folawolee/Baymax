@@ -12,8 +12,8 @@ import { useCompanyConfig } from "@/lib/companyConfig";
 import { formatQty } from "@/lib/format";
 
 interface SiteStatusRow {
-  siteId: string;
-  siteName: string;
+  facilityId: string;
+  facilityName: string;
   status: Status;
   statusLabel: string;
   actualToDate: number | null;
@@ -21,8 +21,8 @@ interface SiteStatusRow {
 }
 
 interface BatchSiteRow {
-  siteId: string;
-  siteName: string;
+  facilityId: string;
+  facilityName: string;
   todayBatchCount: number;
   todayNetTons: number;
   qcPassRate: number | null;
@@ -31,17 +31,17 @@ interface BatchSiteRow {
 
 export default function ProductionPage() {
   const router = useRouter();
-  const { siteTermLabel, productionUnitLabel } = useCompanyConfig();
-  const { data: sites } = trpc.site.list.useQuery();
-  const { data, isLoading } = trpc.production.statusForAllSites.useQuery();
-  const { data: batchData, isLoading: loadingBatch } = trpc.productionBatch.summaryForAllSites.useQuery();
+  const { productionUnitLabel } = useCompanyConfig();
+  const { data: sites } = trpc.productionFacility.list.useQuery();
+  const { data, isLoading } = trpc.production.statusForAllFacilities.useQuery();
+  const { data: batchData, isLoading: loadingBatch } = trpc.productionBatch.summaryForAllFacilities.useQuery();
   const { data: summary } = trpc.insights.moduleSummary.useQuery({ module: "production" });
 
   const simpleSiteIds = new Set((sites ?? []).filter((s) => s.productionMode === "SIMPLE").map((s) => s.id));
 
   const rows: SiteStatusRow[] = (data ?? [])
-    .filter(({ site }) => simpleSiteIds.has(site.id))
-    .map(({ site, status }) => {
+    .filter(({ facility }) => simpleSiteIds.has(facility.id))
+    .map(({ facility, status }) => {
       let s: Status = "neutral";
       let label = "No target set";
       if (status.hasPlan) {
@@ -49,8 +49,8 @@ export default function ProductionPage() {
         label = status.isBehindPlan ? "Behind plan" : "On track";
       }
       return {
-        siteId: site.id,
-        siteName: site.name,
+        facilityId: facility.id,
+        facilityName: facility.name,
         status: s,
         statusLabel: label,
         actualToDate: status.actualToDate ?? null,
@@ -58,9 +58,9 @@ export default function ProductionPage() {
       };
     });
 
-  const batchRows: BatchSiteRow[] = (batchData ?? []).map(({ site, summary }) => ({
-    siteId: site.id,
-    siteName: site.name,
+  const batchRows: BatchSiteRow[] = (batchData ?? []).map(({ facility, summary }) => ({
+    facilityId: facility.id,
+    facilityName: facility.name,
     todayBatchCount: summary.todayBatchCount,
     todayNetTons: summary.todayNetTons,
     qcPassRate: summary.qcPassRate,
@@ -75,7 +75,7 @@ export default function ProductionPage() {
   const awaitingQcTotal = batchRows.reduce((sum, r) => sum + r.awaitingQcCount, 0);
 
   const columns: DataTableColumn<SiteStatusRow>[] = [
-    { key: "site", header: siteTermLabel, cell: (r) => r.siteName },
+    { key: "site", header: "Facility", cell: (r) => r.facilityName },
     {
       key: "actual",
       header: `${productionUnitLabel} to date`,
@@ -97,7 +97,7 @@ export default function ProductionPage() {
   ];
 
   const batchColumns: DataTableColumn<BatchSiteRow>[] = [
-    { key: "site", header: siteTermLabel, cell: (r) => r.siteName },
+    { key: "site", header: "Facility", cell: (r) => r.facilityName },
     { key: "batches", header: "Batches today", cell: (r) => String(r.todayBatchCount), numeric: true },
     { key: "tons", header: "Net tons today", cell: (r) => formatQty(r.todayNetTons, "t"), numeric: true },
     {
@@ -123,7 +123,6 @@ export default function ProductionPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-heading text-lg font-semibold">Production</h1>
-          <p className="text-sm text-muted-foreground">See problems on day one, not week three.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/production/sites" className={buttonVariants({ variant: "outline" })}>
@@ -159,7 +158,7 @@ export default function ProductionPage() {
             <StatTile label="On track" value={String(onTrackCount)} accent="good" />
             <StatTile label="Behind plan" value={String(behindCount)} accent={behindCount > 0 ? "bad" : "good"} />
             <StatTile label="No target set" value={String(noPlanCount)} />
-            <StatTile label={`Total ${siteTermLabel.toLowerCase()}s`} value={String(rows.length)} />
+            <StatTile label="Total facilities" value={String(rows.length)} />
           </StatRow>
 
           {withPlan.length > 0 && (
@@ -169,8 +168,8 @@ export default function ProductionPage() {
               </p>
               <BarChart
                 items={withPlan.map((r) => ({
-                  id: r.siteId,
-                  label: r.siteName,
+                  id: r.facilityId,
+                  label: r.facilityName,
                   value: r.actualToDate ?? 0,
                   reference: r.proRatedTarget ?? undefined,
                   status: r.status,
@@ -187,9 +186,9 @@ export default function ProductionPage() {
             <DataTable
               columns={columns}
               rows={rows}
-              rowKey={(r) => r.siteId}
-              onRowClick={(r) => router.push(`/production/${r.siteId}`)}
-              emptyTitle={`No ${siteTermLabel.toLowerCase()}s yet`}
+              rowKey={(r) => r.facilityId}
+              onRowClick={(r) => router.push(`/production/${r.facilityId}`)}
+              emptyTitle="No facilities yet"
             />
           )}
         </div>
@@ -213,8 +212,8 @@ export default function ProductionPage() {
             <DataTable
               columns={batchColumns}
               rows={batchRows}
-              rowKey={(r) => r.siteId}
-              onRowClick={(r) => router.push(`/production/${r.siteId}`)}
+              rowKey={(r) => r.facilityId}
+              onRowClick={(r) => router.push(`/production/${r.facilityId}`)}
               emptyTitle="No weighbridge lines yet"
             />
           )}

@@ -11,12 +11,12 @@ import { Input } from "@/components/ui/input";
 export default function NewBatchPage() {
   const router = useRouter();
   const utils = trpc.useUtils();
-  const { data: sites } = trpc.site.list.useQuery({ activeOnly: true });
+  const { data: sites } = trpc.productionFacility.list.useQuery({ activeOnly: true });
   const weighIn = trpc.productionBatch.weighIn.useMutation();
 
-  const batchSites = (sites ?? []).filter((s) => s.productionMode === "BATCH_WEIGHBRIDGE");
+  const batchFacilities = (sites ?? []).filter((s) => s.productionMode === "BATCH_WEIGHBRIDGE");
 
-  const [siteId, setSiteId] = useState("");
+  const [facilityId, setFacilityId] = useState("");
   const [orderId, setOrderId] = useState("");
   const [productLabel, setProductLabel] = useState("");
   const [truckPlateNumber, setTruckPlateNumber] = useState("");
@@ -24,33 +24,33 @@ export default function NewBatchPage() {
   const [tareWeightKg, setTareWeightKg] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const { data: openOrders } = trpc.productionOrder.listBySite.useQuery({ siteId }, { enabled: !!siteId });
+  const { data: openOrders } = trpc.productionOrder.listByFacility.useQuery({ facilityId }, { enabled: !!facilityId });
   const availableOrders = (openOrders ?? []).filter((o) => o.progress.status === "OPEN" || o.progress.status === "IN_PROGRESS");
 
   useEffect(() => {
-    if (siteId || batchSites.length === 0) return;
+    if (facilityId || batchFacilities.length === 0) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSiteId(batchSites[0].id);
-  }, [batchSites, siteId]);
+    setFacilityId(batchFacilities[0].id);
+  }, [batchFacilities, facilityId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!siteId || !productLabel || !truckPlateNumber || !tareWeightKg) return;
+    if (!facilityId || !productLabel || !truckPlateNumber || !tareWeightKg) return;
     try {
       const batch = await weighIn.mutateAsync({
-        siteId,
+        facilityId,
         orderId: orderId || undefined,
         productLabel,
         truckPlateNumber,
         driverName: driverName || undefined,
         tareWeightKg: Number(tareWeightKg),
       });
-      await utils.productionBatch.listBySite.invalidate({ siteId });
-      await utils.productionBatch.siteSummary.invalidate({ siteId });
-      await utils.productionBatch.summaryForAllSites.invalidate();
+      await utils.productionBatch.listByFacility.invalidate({ facilityId });
+      await utils.productionBatch.facilitySummary.invalidate({ facilityId });
+      await utils.productionBatch.summaryForAllFacilities.invalidate();
       if (orderId) {
-        await utils.productionOrder.listBySite.invalidate({ siteId });
+        await utils.productionOrder.listByFacility.invalidate({ facilityId });
         await utils.productionOrder.getById.invalidate({ id: orderId });
       }
       router.push(`/production/batch/${batch.id}`);
@@ -70,14 +70,14 @@ export default function NewBatchPage() {
         <Label htmlFor="site">Line</Label>
         <select
           id="site"
-          value={siteId}
+          value={facilityId}
           onChange={(e) => {
-            setSiteId(e.target.value);
+            setFacilityId(e.target.value);
             setOrderId("");
           }}
           className="h-11 w-full rounded-md border border-input bg-background px-3 text-base"
         >
-          {batchSites.map((s) => (
+          {batchFacilities.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
             </option>
@@ -133,7 +133,7 @@ export default function NewBatchPage() {
 
       {error && <p className="text-sm text-status-bad">{error}</p>}
 
-      <Button type="submit" size="lg" disabled={!siteId || !productLabel || !truckPlateNumber || !tareWeightKg || weighIn.isPending}>
+      <Button type="submit" size="lg" disabled={!facilityId || !productLabel || !truckPlateNumber || !tareWeightKg || weighIn.isPending}>
         {weighIn.isPending ? "Saving…" : "Weigh in"}
       </Button>
     </form>

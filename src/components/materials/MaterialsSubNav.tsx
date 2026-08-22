@@ -8,7 +8,7 @@ const TABS = [
   { href: "/materials", label: "Catalog", exact: true },
   { href: "/materials/by-location", label: "By location", exact: false },
   { href: "/materials/transfer", label: "Transfer", exact: false },
-  { href: "/materials/locations", label: "Locations", exact: false },
+  { href: "/materials/ledger", label: "Ledger", exact: false },
 ];
 
 /** Sub-nav for the merged Materials + Inventory module — catalog, stock-by-location, and transfer are one module now. */

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { trpc } from "@/lib/trpc";
+import { scopeLabel } from "@/lib/scopes";
 import { RecordDetailLayout } from "@/components/data/RecordDetailLayout";
 import { ActivityLog } from "@/components/data/ActivityLog";
 import { StatusBadge, type Status } from "@/components/data/StatusBadge";
@@ -50,7 +51,7 @@ export default function InvoiceDetailPage() {
   return (
     <RecordDetailLayout
       title={invoice.customer.name}
-      subtitle={`${invoice.site.name} · Issued ${formatDate(invoice.issueDate)} · Due ${formatDate(invoice.dueDate)}`}
+      subtitle={`${scopeLabel(invoice)} · Issued ${formatDate(invoice.issueDate)} · Due ${formatDate(invoice.dueDate)}`}
       badge={<StatusBadge status={status} label={statusLabel} />}
       actions={
         invoice.status === "DRAFT" ? (

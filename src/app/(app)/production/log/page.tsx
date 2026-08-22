@@ -17,15 +17,15 @@ function todayIso(): string {
 
 export default function ProductionLogPage() {
   const router = useRouter();
-  const { productionUnitLabel, siteTermLabel } = useCompanyConfig();
+  const { productionUnitLabel } = useCompanyConfig();
   const { enqueue } = useOfflineQueue();
   const utils = trpc.useUtils();
 
   const { data: me } = trpc.user.me.useQuery();
-  const { data: sites } = trpc.site.list.useQuery({ activeOnly: true });
+  const { data: sites } = trpc.productionFacility.list.useQuery({ activeOnly: true });
   const logMutation = trpc.production.log.useMutation();
 
-  const [siteId, setSiteId] = useState<string>("");
+  const [facilityId, setFacilityId] = useState<string>("");
   const [date, setDate] = useState(todayIso());
   const [output, setOutput] = useState("");
   const [notes, setNotes] = useState("");
@@ -33,14 +33,14 @@ export default function ProductionLogPage() {
   const [status, setStatus] = useState<null | "saved" | "queued">(null);
 
   useEffect(() => {
-    if (siteId || !sites || sites.length === 0) return;
+    if (facilityId || !sites || sites.length === 0) return;
     // Defaulting to the user's own site once the async queries resolve —
     // genuinely syncing local state from data that arrives after mount.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSiteId(me?.siteId ?? sites[0].id);
-  }, [me, sites, siteId]);
+    setFacilityId(me?.facilityId ?? sites[0].id);
+  }, [me, sites, facilityId]);
 
-  const { data: lastLog } = trpc.production.lastLog.useQuery({ siteId }, { enabled: !!siteId });
+  const { data: lastLog } = trpc.production.lastLog.useQuery({ facilityId }, { enabled: !!facilityId });
 
   const lastLogHint = useMemo(() => {
     if (!lastLog) return null;
@@ -49,13 +49,13 @@ export default function ProductionLogPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!siteId || !output) return;
+    if (!facilityId || !output) return;
 
     const wasOnline = navigator.onLine;
     await enqueue(`Production log for ${date}`, async () => {
-      await logMutation.mutateAsync({ siteId, date: new Date(date), output: Number(output), notes: notes || undefined });
-      await utils.production.statusForAllSites.invalidate();
-      await utils.production.planVsActual.invalidate({ siteId });
+      await logMutation.mutateAsync({ facilityId, date: new Date(date), output: Number(output), notes: notes || undefined });
+      await utils.production.statusForAllFacilities.invalidate();
+      await utils.production.planVsActual.invalidate({ facilityId });
     });
 
     setStatus(wasOnline ? "saved" : "queued");
@@ -86,11 +86,11 @@ export default function ProductionLogPage() {
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="site">{siteTermLabel}</Label>
+        <Label htmlFor="site">Facility</Label>
         <select
           id="site"
-          value={siteId}
-          onChange={(e) => setSiteId(e.target.value)}
+          value={facilityId}
+          onChange={(e) => setFacilityId(e.target.value)}
           className="h-11 w-full rounded-md border border-input bg-background px-3 text-base"
         >
           {(sites ?? []).map((s) => (
@@ -124,7 +124,7 @@ export default function ProductionLogPage() {
 
       <PhotoCaptureField value={photo} onChange={setPhoto} />
 
-      <Button type="submit" size="lg" disabled={!siteId || !output || logMutation.isPending}>
+      <Button type="submit" size="lg" disabled={!facilityId || !output || logMutation.isPending}>
         {logMutation.isPending ? "Saving…" : "Save entry"}
       </Button>
     </form>

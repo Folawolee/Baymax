@@ -9,6 +9,7 @@ import { AppNav } from "@/components/layout/AppNav";
 import { MobileTopBar } from "@/components/layout/MobileTopBar";
 import { OfflineIndicator } from "@/components/data/OfflineIndicator";
 import { BimpePanel } from "@/components/bimpe/ChatPanel";
+import { NotificationPopups } from "@/components/dashboard/NotificationPopups";
 
 export default function AppShellLayout({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -29,6 +30,8 @@ export default function AppShellLayout({ children }: { children: React.ReactNode
           <AppNav />
           <MobileTopBar />
           <OfflineIndicator />
+          {/* Mounted here, not on a page: a dismissal must survive navigation. */}
+          <NotificationPopups />
           <main className="flex-1 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:pb-6">{children}</main>
           <BimpePanel />
         </div>

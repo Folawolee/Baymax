@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
+import { scopeLabel, useScopeOptions, scopeArgs } from "@/lib/scopes";
 import { DataTable, type DataTableColumn } from "@/components/data/DataTable";
 import { StatusBadge, statusCellClass, type Status } from "@/components/data/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ export default function InvoicesPage() {
   const utils = trpc.useUtils();
   const { data: invoices, isLoading } = trpc.invoice.list.useQuery();
   const { data: customers } = trpc.customer.list.useQuery();
-  const { data: sites } = trpc.site.list.useQuery();
+  const scopes = useScopeOptions();
   const create = trpc.invoice.create.useMutation({
     onSuccess: async (invoice) => {
       await utils.invoice.list.invalidate();
@@ -35,14 +36,14 @@ export default function InvoicesPage() {
   });
 
   const [showForm, setShowForm] = useState(false);
-  const [siteId, setSiteId] = useState("");
+  const [scopeKey, setScopeKey] = useState("");
   const [customerId, setCustomerId] = useState("");
   const [amount, setAmount] = useState("");
   const [dueDate, setDueDate] = useState("");
 
   const columns: DataTableColumn<NonNullable<typeof invoices>[number]>[] = [
     { key: "customer", header: "Customer", cell: (inv) => inv.customer.name },
-    { key: "site", header: "Site", cell: (inv) => inv.site.name },
+    { key: "site", header: "Site", cell: (inv) => scopeLabel(inv) },
     { key: "amount", header: "Amount", cell: (inv) => formatCurrency(inv.amount), numeric: true },
     { key: "due", header: "Due", cell: (inv) => formatDate(inv.dueDate) },
     {
@@ -76,9 +77,9 @@ export default function InvoicesPage() {
           className="flex flex-wrap items-end gap-2 rounded-md border p-3"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!siteId || !customerId || !amount || !dueDate) return;
+            if (!scopeKey || !customerId || !amount || !dueDate) return;
             create.mutate({
-              siteId,
+              ...scopeArgs(scopeKey),
               customerId,
               amount: Number(amount),
               issueDate: new Date(),
@@ -88,12 +89,12 @@ export default function InvoicesPage() {
         >
           <div className="space-y-1.5">
             <Label htmlFor="inv-site">Site</Label>
-            <select id="inv-site" value={siteId} onChange={(e) => setSiteId(e.target.value)} className="h-8 w-40 rounded-lg border border-input bg-background px-2.5 text-sm">
+            <select id="inv-site" value={scopeKey} onChange={(e) => setScopeKey(e.target.value)} className="h-8 w-40 rounded-lg border border-input bg-background px-2.5 text-sm">
               <option value="" disabled>
                 Select
               </option>
-              {(sites ?? []).map((s) => (
-                <option key={s.id} value={s.id}>
+              {scopes.map((s) => (
+                <option key={s.key} value={s.key}>
                   {s.name}
                 </option>
               ))}

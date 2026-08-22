@@ -1,28 +1,57 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Camera, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { trpc } from "@/lib/trpc";
+import { compressImage, dataUrlToBase64 } from "@/lib/imageCompress";
 
 interface PhotoCaptureFieldProps {
   value: string | null;
   onChange: (dataUrl: string | null) => void;
   label?: string;
+  /**
+   * Optional: when provided, the compressed photo is also uploaded as a real
+   * Attachment (trpc.attachment.create) and this fires with the result.
+   * Callers that omit it keep the old local-preview-only behavior.
+   */
+  onUpload?: (result: { attachmentId: string; dataUrl: string }) => void;
 }
 
 /**
- * Photo capture as a first-class field (§9), not an attachment afterthought.
- * Stub for this phase: previews locally, does not upload — the backend has
- * no file storage yet (see plan's explicit non-goal for this session).
+ * Photo capture as a first-class field (§9). Every capture is downscaled and
+ * re-encoded client-side via Canvas before use (smaller payloads for all
+ * callers); callers that pass `onUpload` additionally get it persisted as a
+ * real Attachment.
  */
-export function PhotoCaptureField({ value, onChange, label = "Add photo evidence" }: PhotoCaptureFieldProps) {
+export function PhotoCaptureField({ value, onChange, label = "Add photo evidence", onUpload }: PhotoCaptureFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const createAttachment = trpc.attachment.create.useMutation();
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  function handleFile(file: File | undefined) {
+  async function handleFile(file: File | undefined) {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => onChange(reader.result as string);
-    reader.readAsDataURL(file);
+    setIsProcessing(true);
+    try {
+      const { dataUrl, mimeType } = await compressImage(file);
+      onChange(dataUrl);
+      if (onUpload) {
+        try {
+          const attachment = await createAttachment.mutateAsync({
+            fileName: file.name,
+            mimeType,
+            base64Data: dataUrlToBase64(dataUrl),
+          });
+          onUpload({ attachmentId: attachment.id, dataUrl });
+        } catch (err) {
+          console.error("Failed to upload receipt photo", err);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to process photo", err);
+    } finally {
+      setIsProcessing(false);
+    }
   }
 
   if (value) {
@@ -50,11 +79,11 @@ export function PhotoCaptureField({ value, onChange, label = "Add photo evidence
         accept="image/*"
         capture="environment"
         className="hidden"
-        onChange={(e) => handleFile(e.target.files?.[0])}
+        onChange={(e) => void handleFile(e.target.files?.[0])}
       />
-      <Button type="button" variant="outline" size="lg" onClick={() => inputRef.current?.click()}>
+      <Button type="button" variant="outline" size="lg" disabled={isProcessing} onClick={() => inputRef.current?.click()}>
         <Camera className="size-4" />
-        {label}
+        {isProcessing ? "Processing…" : label}
       </Button>
     </>
   );

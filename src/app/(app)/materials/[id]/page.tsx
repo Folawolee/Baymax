@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { trpc } from "@/lib/trpc";
+import { scopeLabel } from "@/lib/scopes";
 import { RecordDetailLayout } from "@/components/data/RecordDetailLayout";
 import { ActivityLog } from "@/components/data/ActivityLog";
 import { StatusBadge } from "@/components/data/StatusBadge";
@@ -77,7 +78,7 @@ export default function MaterialDetailPage() {
           entries={(usageLogs ?? []).map((log) => ({
             id: log.id,
             actor: log.loggedBy.name,
-            action: `used ${formatQty(log.qty, material.unitOfMeasure)} at ${log.site.name} for "${log.task}"`,
+            action: `used ${formatQty(log.qty, material.unitOfMeasure)} at ${scopeLabel(log)} for "${log.task}"`,
             timestamp: log.timestamp,
           }))}
         />

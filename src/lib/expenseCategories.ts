@@ -1,0 +1,31 @@
+export const EXPENSE_CATEGORIES = [
+  "FUEL",
+  "SUBCONTRACT_CASUAL_LABOUR",
+  "MATERIALS_CONSUMABLES",
+  "PLANT_EQUIPMENT_REPAIRS",
+  "TRANSPORT_LOGISTICS",
+  "SITE_FACILITIES_WELFARE",
+  "STAFF_SALARIES_ALLOWANCES",
+  "VEHICLE_REPAIRS_SERVICING",
+  "PROFESSIONAL_ADMIN_OFFICE",
+  "SECURITY_COMMUNITY_PR",
+  "BANK_CHARGES_DUTIES",
+  "ADJUSTMENTS_RECONCILIATION",
+  "OTHER_UNCLASSIFIED",
+] as const;
+
+export const CATEGORY_LABELS: Record<string, string> = {
+  FUEL: "Fuel",
+  SUBCONTRACT_CASUAL_LABOUR: "Subcontract & Casual Labour",
+  MATERIALS_CONSUMABLES: "Materials & Consumables",
+  PLANT_EQUIPMENT_REPAIRS: "Plant, Equipment & Repairs",
+  TRANSPORT_LOGISTICS: "Transport & Logistics",
+  SITE_FACILITIES_WELFARE: "Site Facilities & Welfare",
+  STAFF_SALARIES_ALLOWANCES: "Salaries, Allowances & Staff Costs",
+  VEHICLE_REPAIRS_SERVICING: "Vehicle Repairs & Servicing",
+  PROFESSIONAL_ADMIN_OFFICE: "Professional, Admin & Office",
+  SECURITY_COMMUNITY_PR: "Security, Community & PR",
+  BANK_CHARGES_DUTIES: "Bank Charges & Duties",
+  ADJUSTMENTS_RECONCILIATION: "Adjustments - Cash Book Reconciliation",
+  OTHER_UNCLASSIFIED: "Other / Unclassified",
+};

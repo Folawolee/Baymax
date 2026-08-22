@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDateTime } from "@/lib/format";
 
 export interface ApprovalQueueRowProps {
-  vendorName: string;
+  title: string;
   total: number;
   waitingSince: string | Date;
   onApprove: () => void;
@@ -11,11 +11,11 @@ export interface ApprovalQueueRowProps {
 }
 
 /** A queue to clear, not a workflow to visualize — flat list, one-tap decide (§7). */
-export function ApprovalQueueRow({ vendorName, total, waitingSince, onApprove, onReject, isPending }: ApprovalQueueRowProps) {
+export function ApprovalQueueRow({ title, total, waitingSince, onApprove, onReject, isPending }: ApprovalQueueRowProps) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b px-3 py-3 last:border-b-0">
       <div className="min-w-0">
-        <p className="font-medium">{vendorName}</p>
+        <p className="font-medium">{title}</p>
         <p className="text-xs text-muted-foreground">Waiting since {formatDateTime(waitingSince)}</p>
       </div>
       <div className="flex items-center gap-3">

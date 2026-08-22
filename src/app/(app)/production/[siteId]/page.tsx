@@ -53,30 +53,30 @@ function batchStatusMeta(status: string): { label: string; kind: "good" | "warn"
 }
 
 export default function ProductionSiteDetailPage() {
-  const { siteId } = useParams<{ siteId: string }>();
+  const { siteId: facilityId } = useParams<{ siteId: string }>();
   const { productionUnitLabel } = useCompanyConfig();
-  const { data: sites } = trpc.site.list.useQuery();
-  const site = sites?.find((s) => s.id === siteId);
+  const { data: sites } = trpc.productionFacility.list.useQuery();
+  const site = sites?.find((s) => s.id === facilityId);
   const isBatchMode = site?.productionMode === "BATCH_WEIGHBRIDGE";
 
   if (site && isBatchMode) {
-    return <BatchSiteDetail siteId={siteId} siteName={site.name} siteTypeLabel={site.typeLabel} />;
+    return <BatchSiteDetail facilityId={facilityId} facilityName={site.name} facilityTypeLabel={site.facilityType} />;
   }
 
-  return <SimpleSiteDetail siteId={siteId} site={site} productionUnitLabel={productionUnitLabel} />;
+  return <SimpleSiteDetail facilityId={facilityId} site={site} productionUnitLabel={productionUnitLabel} />;
 }
 
 function SimpleSiteDetail({
-  siteId,
+  facilityId,
   site,
   productionUnitLabel,
 }: {
-  siteId: string;
-  site: { name: string; typeLabel: string } | undefined;
+  facilityId: string;
+  site: { name: string; facilityType: string } | undefined;
   productionUnitLabel: string;
 }) {
-  const { data: status, isLoading } = trpc.production.planVsActual.useQuery({ siteId });
-  const { data: logs } = trpc.production.listLogs.useQuery({ siteId });
+  const { data: status, isLoading } = trpc.production.planVsActual.useQuery({ facilityId });
+  const { data: logs } = trpc.production.listLogs.useQuery({ facilityId });
 
   if (isLoading || !status) {
     return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -92,8 +92,8 @@ function SimpleSiteDetail({
 
   return (
     <RecordDetailLayout
-      title={site?.name ?? siteId}
-      subtitle={site?.typeLabel}
+      title={site?.name ?? facilityId}
+      subtitle={site?.facilityType}
       badge={badge}
       main={
         <div className="flex flex-col gap-4">
@@ -115,7 +115,7 @@ function SimpleSiteDetail({
           ) : (
             <div className="flex flex-col items-start gap-2 rounded-md border p-4">
               <p className="text-sm text-muted-foreground">No target set for this period yet.</p>
-              <Link href={`/production/plan/new?siteId=${siteId}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+              <Link href={`/production/plan/new?facilityId=${facilityId}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
                 Set a target
               </Link>
             </div>
@@ -151,18 +151,18 @@ function SimpleSiteDetail({
 }
 
 function BatchSiteDetail({
-  siteId,
-  siteName,
-  siteTypeLabel,
+  facilityId,
+  facilityName,
+  facilityTypeLabel,
 }: {
-  siteId: string;
-  siteName: string;
-  siteTypeLabel: string;
+  facilityId: string;
+  facilityName: string;
+  facilityTypeLabel: string;
 }) {
   const router = useRouter();
-  const { data: batches, isLoading } = trpc.productionBatch.listBySite.useQuery({ siteId });
-  const { data: summary } = trpc.productionBatch.siteSummary.useQuery({ siteId });
-  const { data: orders } = trpc.productionOrder.listBySite.useQuery({ siteId });
+  const { data: batches, isLoading } = trpc.productionBatch.listByFacility.useQuery({ facilityId });
+  const { data: summary } = trpc.productionBatch.facilitySummary.useQuery({ facilityId });
+  const { data: orders } = trpc.productionOrder.listByFacility.useQuery({ facilityId });
 
   const rows: BatchRow[] = (batches ?? []).map((b) => ({
     id: b.id,
@@ -201,11 +201,11 @@ function BatchSiteDetail({
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-heading text-lg font-semibold">{siteName}</h1>
-          <p className="text-sm text-muted-foreground">{siteTypeLabel}</p>
+          <h1 className="font-heading text-lg font-semibold">{facilityName}</h1>
+          <p className="text-sm text-muted-foreground">{facilityTypeLabel}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href={`/production/orders/new?siteId=${siteId}`} className={buttonVariants({ variant: "outline" })}>
+          <Link href={`/production/orders/new?facilityId=${facilityId}`} className={buttonVariants({ variant: "outline" })}>
             New order
           </Link>
           <Link href="/production/batch/new" className={buttonVariants()}>

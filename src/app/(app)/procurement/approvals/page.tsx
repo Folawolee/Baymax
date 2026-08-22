@@ -31,7 +31,7 @@ export default function ApprovalsPage() {
           {approvals.map((a) => (
             <ApprovalQueueRow
               key={a.approvalId}
-              vendorName={a.vendorName}
+              title={a.vendorName}
               total={a.total}
               waitingSince={a.createdAt}
               isPending={decide.isPending}

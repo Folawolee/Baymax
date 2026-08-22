@@ -57,14 +57,14 @@ export default function ProductionOrderDetailPage() {
   async function handleCancel() {
     await cancel.mutateAsync({ orderId: id });
     await utils.productionOrder.getById.invalidate({ id });
-    await utils.productionOrder.listBySite.invalidate({ siteId: order.siteId });
+    await utils.productionOrder.listByFacility.invalidate({ facilityId: order.facilityId });
     await utils.productionOrder.listByCompany.invalidate();
   }
 
   return (
     <RecordDetailLayout
       title={order.productLabel}
-      subtitle={`${order.customer?.name ?? "No customer on file"} · ${order.site.name}`}
+      subtitle={`${order.customer?.name ?? "No customer on file"} · ${order.facility.name}`}
       badge={<StatusBadge status={meta.status} label={meta.label} />}
       actions={
         canCancel ? (

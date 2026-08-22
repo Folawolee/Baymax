@@ -35,8 +35,8 @@ export function buildDeepLinks(toolResults: ToolCallResult[]): DeepLink[] {
         break;
       }
       case "get_production_status": {
-        const siteId = (output as { siteId?: string }).siteId;
-        if (typeof siteId === "string") links.push({ label: "View production", href: `/production/${siteId}` });
+        const facilityId = (output as { facilityId?: string }).facilityId;
+        if (typeof facilityId === "string") links.push({ label: "View production", href: `/production/${facilityId}` });
         break;
       }
       case "list_pending_approvals": {
@@ -47,6 +47,12 @@ export function buildDeepLinks(toolResults: ToolCallResult[]): DeepLink[] {
       case "draft_purchase_order": {
         const poId = (output as { purchaseOrderId?: string }).purchaseOrderId;
         if (typeof poId === "string") links.push({ label: "View draft order", href: `/procurement/${poId}` });
+        break;
+      }
+      case "log_expense":
+      case "create_project": {
+        const actionId = (output as { actionId?: string }).actionId;
+        if (typeof actionId === "string") links.push({ label: "Open Bimpe approvals", href: "/bimpe/approvals" });
         break;
       }
     }

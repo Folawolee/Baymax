@@ -32,12 +32,12 @@ export default function ProjectsPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
-  function moneyForProject(siteIds: Set<string>) {
+  function moneyForProject(roadIds: Set<string>) {
     const totalImprest = (imprests ?? [])
-      .filter((i) => siteIds.has(i.site.id))
+      .filter((i) => i.roadId !== null && roadIds.has(i.roadId))
       .reduce((sum, i) => sum + i.amount, 0);
     const totalSpend = (expenses ?? [])
-      .filter((e) => siteIds.has(e.site.id))
+      .filter((e) => e.roadId !== null && roadIds.has(e.roadId))
       .reduce((sum, e) => sum + e.amount, 0);
     return { totalImprest, totalSpend, balance: totalImprest - totalSpend };
   }
@@ -92,22 +92,22 @@ export default function ProjectsPage() {
       ) : (
         <ul className="flex flex-col gap-2">
           {projects.map((project) => {
-            const siteIds = new Set(project.sites.map((s) => s.id));
-            const money = moneyForProject(siteIds);
+            const roadIds = new Set(project.roads.map((s) => s.id));
+            const money = moneyForProject(roadIds);
             const isCompleted = project.status === "COMPLETED";
             return (
               <li key={project.id} className="rounded-md border p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium">{project.name}</p>
+                      <Link href={`/site-operations/projects/${project.id}`} className="font-medium text-primary hover:underline">{project.name}</Link>
                       <StatusBadge status={isCompleted ? "good" : "neutral"} label={isCompleted ? "Completed" : "Active"} />
                     </div>
                     {project.description && <p className="text-sm text-muted-foreground">{project.description}</p>}
                     <p className="mt-2 text-xs text-muted-foreground">
-                      {project.sites.length === 0
+                      {project.roads.length === 0
                         ? `No ${siteTermLabel.toLowerCase()}s assigned yet`
-                        : project.sites.map((s) => s.name).join(", ")}
+                        : project.roads.map((s) => s.name).join(", ")}
                     </p>
                     {(money.totalImprest > 0 || money.totalSpend > 0) && (
                       <p className="mt-2 text-xs text-muted-foreground">
@@ -117,6 +117,7 @@ export default function ProjectsPage() {
                         </span>
                       </p>
                     )}
+                    <Link href={`/site-operations/projects/${project.id}`} className="mt-3 inline-flex text-sm font-medium text-primary hover:underline">Open project operations →</Link>
                   </div>
                   {user?.role === "OWNER_ADMIN" && (
                     <Button
